@@ -6,7 +6,7 @@ authors = ["Jamie Poston <tigerbounces@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
