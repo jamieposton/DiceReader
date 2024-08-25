@@ -1,11 +1,15 @@
 import cv2
+from pathlib import Path
+from datetime import datetime, timezone
 
 cam = cv2.VideoCapture(0)
 
 cv2.namedWindow("test")
 
 img_counter = 0
-
+timestamp = str(datetime.now(tz=timezone.utc))
+base_path = Path("data") / Path(timestamp)
+base_path.mkdir(parents=True)
 while True:
     ret, frame = cam.read()
     if not ret:
@@ -20,7 +24,7 @@ while True:
         break
     elif k%256 == 32:
         # SPACE pressed
-        img_name = "opencv_frame_{}.png".format(img_counter)
+        img_name = "data/{}/opencv_frame_{}.png".format(timestamp, img_counter)
         cv2.imwrite(img_name, frame)
         print("{} written!".format(img_name))
         img_counter += 1
