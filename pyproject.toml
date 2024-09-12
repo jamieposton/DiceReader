@@ -6,9 +6,10 @@ authors = ["Jamie Poston <tigerbounces@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.10"
 opencv-python = "^4.10.0.84"
 torch = "^2.4.0"
+torchvision = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
