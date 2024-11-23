@@ -1,8 +1,13 @@
 import cv2
+import easyocr
 from pathlib import Path
 from datetime import datetime, timezone
 
-cam = cv2.VideoCapture(0)
+print("Initializing camera")
+cam = cv2.VideoCapture("/dev/video4")
+
+print("Initializing OCR Reader")
+reader = easyocr.Reader(['en'])
 
 cv2.namedWindow("test")
 
@@ -25,6 +30,8 @@ while True:
     elif k%256 == 32:
         # SPACE pressed
         img_name = "data/{}/opencv_frame_{}.png".format(timestamp, img_counter)
+        print("Reader found the text:")
+        print(reader.readtext(frame))
         cv2.imwrite(img_name, frame)
         print("{} written!".format(img_name))
         img_counter += 1
