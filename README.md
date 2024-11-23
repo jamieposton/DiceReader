@@ -32,3 +32,14 @@ If that doesn't work, try uninstalling and reinstalling opencv-python with pip:
 pip uninstall opencv-python
 pip install opencv-python
 ```
+
+## Script using wrong camera, or failed to find frame
+
+This could be because you have two cameras plugged into your computer.
+For me, this was a built-in webcam and a usb camera that wasn't set as the default.
+
+To switch cameras, try running `ls /dev/` before and after plugging in your camera.
+You should be able to see a list of `video0`, `video1`, and so on.
+Your USB camera should be the video that appears in that list after plugging it in.
+Once you've figured that out, you can use that when calling `cv2.VideoCapture` instead
+of whatevers already in the script.
