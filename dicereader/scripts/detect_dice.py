@@ -18,6 +18,7 @@ def show_histogram():
     plt.title("Live Dice Roll Distribution")
     plt.pause(0.001)
 
+# TODO: don't try to detect dice with pips: use text.
 def detect_dice_number(frame):
     """Simplified placeholder: replace with a ML model later"""
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -36,6 +37,41 @@ def detect_dice_number(frame):
 
     return min(dot_count, 6)  # cap to 6, useful if noise miscounts
 
+# TODO: Is this _really_ the right size of the camera?
 def main():
+    W=640
+    H=480
     cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, W)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, H)
+    cap.set(cv2.CAP_PROP_FPS, 30)
     plt.ion()
+    last_roll = None
+    try:
+        while True:
+            ret, frame = cap.read()
+            frame = cv2.resize(frame, (640, 480))
+            if not ret:
+                print("Error: Failed to capture frame.")
+                break
+            roll = detect_dice_number(frame)
+            if roll > 0:
+                roll_counts[roll] += 1
+                roll_history.append(roll)
+                last_roll = roll
+            show_histogram()
+            cv2.putText(frame, f"Detected: {last_roll if last_roll else '-'}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.imshow('Dice Detection', frame)
+            # Press 'q' to quit
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+        plt.ioff()
+        plt.show()
+
+if __name__ == "__main__":
+    main()

@@ -11,6 +11,8 @@ Then you can install the packages using this:
 poetry install
 ```
 
+As administator, on windows powershell run: usbipd bind --busid 2-2
+
 ## TODO
  - Attempt OCR on dice
  - Depending on that, write function to find center bounding box and print result of center bounding box
