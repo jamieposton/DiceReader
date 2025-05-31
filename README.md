@@ -13,6 +13,13 @@ poetry install
 
 As administator, on windows powershell run: usbipd bind --busid 2-2
 
+## Important links for debugging camera issues:
+
+WSL kernel camera repo with camera test script: https://github.com/PINTO0309/wsl2_linux_kernel_usbcam_enable_conf/tree/5.15.90.1
+Install usbpid on windows: https://github.com/dorssel/usbipd-win
+How to bind a camera to wsl from windows with usbpid: https://github.com/dorssel/usbipd-win/wiki/WSL-support/6befeedd4c8e2a49468e4b03532c9a20478f8677
+Original ask ubuntu for how to get cameras working with wsl (it's hard): https://askubuntu.com/questions/1405903/capturing-webcam-video-with-opencv-in-wsl2
+
 ## TODO
  - Attempt OCR on dice
  - Depending on that, write function to find center bounding box and print result of center bounding box
