@@ -60,10 +60,17 @@ def main():
     plt.show(block=False)
     plt.pause(0.1)  # Give time for the window to appear
     last_roll = None
+    import os
+    from datetime import datetime
+    # Create top-level folder with datetime stamp
+    run_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    save_root = os.path.join(os.getcwd(), run_timestamp)
+    os.makedirs(save_root, exist_ok=True)
     try:
         last_detected_roll = None
         detecting = False
         detection_frames = []
+        detection_frame_imgs = []
         while True:
             ret, frame = cap.read()
             frame = cv2.resize(frame, (640, 480))
@@ -78,13 +85,21 @@ def main():
                     # Run detection on 5 frames, collect results
                     results = [detect_dice_number(f) for f in detection_frames]
                     # Choose the most common nonzero result
-                    results = [r for r in results if r > 0]
-                    if results:
+                    results_nonzero = [r for r in results if r > 0]
+                    if results_nonzero:
                         from collections import Counter
-                        most_common, _ = Counter(results).most_common(1)[0]
+                        most_common, _ = Counter(results_nonzero).most_common(1)[0]
                         roll_counts[most_common] += 1
                         roll_history.append(most_common)
                         last_detected_roll = most_common
+                        label = most_common
+                    else:
+                        label = "unknown"
+                    # Save only the middle frame (index 2) to the appropriate folder
+                    label_folder = os.path.join(save_root, str(label))
+                    os.makedirs(label_folder, exist_ok=True)
+                    img_filename = os.path.join(label_folder, f"img_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.jpg")
+                    cv2.imwrite(img_filename, detection_frames[2])
                     detection_frames = []
                     detecting = False
             if key == ord('d') and not detecting:
