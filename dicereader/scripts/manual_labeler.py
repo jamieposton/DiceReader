@@ -20,6 +20,8 @@ def confirm_label(img_path, label):
         print(f"Warning: Could not load image: {img_path}. Skipping.")
         return False
     window_title = f'Label: {label} | {img_path} (y=confirm, n=reject, q=quit)'
+    cv2.namedWindow(window_title, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(window_title, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     cv2.imshow(window_title, img)
     while True:
         key = cv2.waitKey(0) & 0xFF
@@ -39,6 +41,8 @@ def manual_label(img_path):
         print(f"Warning: Could not load image: {img_path}. Skipping.")
         return 'unknown'
     window_title = f'Unknown: {img_path} (1-6=label, u=unknown, q=quit)'
+    cv2.namedWindow(window_title, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(window_title, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     cv2.imshow(window_title, img)
     while True:
         key = cv2.waitKey(0) & 0xFF
