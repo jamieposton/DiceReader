@@ -11,7 +11,13 @@ Then you can install the packages using this:
 poetry install
 ```
 
-As administator, on windows powershell run: usbipd bind --busid 2-2
+As administator, on windows powershell run:
+usbipd bind --busid 2-2
+usbipd attach --wsl --busid=2-2
+
+This is assuming the logitech camera is on BUSID 2-2. You can check this by running usbipd list on windows powershell
+
+You should now be able to run `lsusb` in WSL and see the camera attached.
 
 ## Important links for debugging camera issues:
 
