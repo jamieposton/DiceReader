@@ -61,28 +61,40 @@ def main():
     plt.pause(0.1)  # Give time for the window to appear
     last_roll = None
     try:
-        frame_count = 0
-        detection_interval = 5  # Only run OCR every 5 frames
         last_detected_roll = None
+        detecting = False
+        detection_frames = []
         while True:
             ret, frame = cap.read()
             frame = cv2.resize(frame, (640, 480))
             if not ret:
                 print("Error: Failed to capture frame.")
                 break
-            frame_count += 1
-            # Only run OCR every detection_interval frames
-            if frame_count % detection_interval == 0:
-                roll = detect_dice_number(frame)
-                if roll > 0:
-                    roll_counts[roll] += 1
-                    roll_history.append(roll)
-                    last_detected_roll = roll
+
+            key = cv2.waitKey(1) & 0xFF
+            if detecting:
+                detection_frames.append(frame.copy())
+                if len(detection_frames) == 5:
+                    # Run detection on 5 frames, collect results
+                    results = [detect_dice_number(f) for f in detection_frames]
+                    # Choose the most common nonzero result
+                    results = [r for r in results if r > 0]
+                    if results:
+                        from collections import Counter
+                        most_common, _ = Counter(results).most_common(1)[0]
+                        roll_counts[most_common] += 1
+                        roll_history.append(most_common)
+                        last_detected_roll = most_common
+                    detection_frames = []
+                    detecting = False
+            if key == ord('d') and not detecting:
+                detecting = True
+                detection_frames = []
             show_histogram()
             cv2.putText(frame, f"Detected: {last_detected_roll if last_detected_roll else '-'}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.imshow('Dice Detection', frame)
             # Press 'q' to quit
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if key == ord('q'):
                 break
 
     finally:
