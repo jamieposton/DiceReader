@@ -11,6 +11,9 @@ Then you can install the packages using this:
 poetry install
 ```
 
+Also we need the TkAgg package for histogram viewing:
+sudo apt-get install python3-tk
+
 As administator, on windows powershell run:
 usbipd bind --busid 2-2
 usbipd attach --wsl --busid=2-2

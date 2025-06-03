@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('TkAgg')
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,6 +19,7 @@ def show_histogram():
     plt.ylabel("Frequency")
     plt.title("Live Dice Roll Distribution")
     plt.pause(0.001)
+    plt.gcf().canvas.flush_events()
 
 # Initialize EasyOCR reader once
 import easyocr
@@ -54,21 +57,29 @@ def main():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, H)
     cap.set(cv2.CAP_PROP_FPS, 30)
     plt.ion()
+    plt.show(block=False)
+    plt.pause(0.1)  # Give time for the window to appear
     last_roll = None
     try:
+        frame_count = 0
+        detection_interval = 5  # Only run OCR every 5 frames
+        last_detected_roll = None
         while True:
             ret, frame = cap.read()
             frame = cv2.resize(frame, (640, 480))
             if not ret:
                 print("Error: Failed to capture frame.")
                 break
-            roll = detect_dice_number(frame)
-            if roll > 0:
-                roll_counts[roll] += 1
-                roll_history.append(roll)
-                last_roll = roll
+            frame_count += 1
+            # Only run OCR every detection_interval frames
+            if frame_count % detection_interval == 0:
+                roll = detect_dice_number(frame)
+                if roll > 0:
+                    roll_counts[roll] += 1
+                    roll_history.append(roll)
+                    last_detected_roll = roll
             show_histogram()
-            cv2.putText(frame, f"Detected: {last_roll if last_roll else '-'}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(frame, f"Detected: {last_detected_roll if last_detected_roll else '-'}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.imshow('Dice Detection', frame)
             # Press 'q' to quit
             if cv2.waitKey(1) & 0xFF == ord('q'):
