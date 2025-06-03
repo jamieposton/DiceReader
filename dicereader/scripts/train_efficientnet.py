@@ -8,9 +8,19 @@ import torch.optim as optim
 from tqdm import tqdm
 
 # Config
+import glob
 BASENAME = os.getcwd()
 from datetime import datetime
-DATA_DIR = os.path.join(BASENAME, 'data', 'curated-labels', '20250603_135639')  # Change to your run folder if needed
+# Use all curated label folders
+DATA_DIR = os.path.join(BASENAME, 'data', 'curated-labels')
+print(f"Using all curated data in: {DATA_DIR}")
+
+class AllRunsImageFolder(datasets.ImageFolder):
+    def __init__(self, root, **kwargs):
+        # root should be 'data/curated-labels'
+        super().__init__(root, **kwargs)
+
+# Use the custom dataset to load all images recursively
 CHECKPOINTS_DIR = os.path.join(BASENAME, 'checkpoints')
 os.makedirs(CHECKPOINTS_DIR, exist_ok=True)
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -29,7 +39,8 @@ transform = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
 ])
 
-dataset = datasets.ImageFolder(DATA_DIR, transform=transform)
+dataset = AllRunsImageFolder(DATA_DIR, transform=transform)
+
 class_names = dataset.classes
 train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
