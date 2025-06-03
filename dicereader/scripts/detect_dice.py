@@ -18,30 +18,37 @@ def show_histogram():
     plt.title("Live Dice Roll Distribution")
     plt.pause(0.001)
 
-# TODO: don't try to detect dice with pips: use text.
+# Initialize EasyOCR reader once
+import easyocr
+reader = easyocr.Reader(['en'], gpu=False)
+
 def detect_dice_number(frame):
-    """Simplified placeholder: replace with a ML model later"""
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
-    _, thresh = cv2.threshold(blur, 120, 255, cv2.THRESH_BINARY_INV)
-
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # Count dots (pip detection)
-    dot_count = 0
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if 50 < area < 300:  # reasonable dot size
-            dot_count += 1
-            (x, y), r = cv2.minEnclosingCircle(cnt)
-            cv2.circle(frame, (int(x), int(y)), int(r), (0, 255, 0), 2)
-
-    return min(dot_count, 6)  # cap to 6, useful if noise miscounts
+    """Detects the number on a die using OCR (EasyOCR). Returns the detected integer or 0 if not found."""
+    # Convert to RGB for EasyOCR
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = reader.readtext(rgb_frame, detail=1, paragraph=False)
+    detected_number = 0
+    best_conf = 0
+    best_bbox = None
+    for (bbox, text, conf) in results:
+        text = text.strip()
+        # Only consider 1-digit numbers (1-6) for standard dice
+        if text.isdigit() and 1 <= int(text) <= 6:
+            if conf > best_conf:
+                detected_number = int(text)
+                best_conf = conf
+                best_bbox = bbox
+    # Highlight the detected number in the frame
+    if best_bbox is not None:
+        pts = np.array(best_bbox, dtype=np.int32)
+        cv2.polylines(frame, [pts], isClosed=True, color=(0,255,255), thickness=3)
+    return detected_number
 
 # TODO: Is this _really_ the right size of the camera?
 def main():
     W=640
     H=480
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture("/dev/video0")
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, W)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, H)
