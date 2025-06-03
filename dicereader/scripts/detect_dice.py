@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import time
+import os 
 
 # Rolling statistics
 roll_counts = defaultdict(int)
@@ -23,7 +24,33 @@ def show_histogram():
 
 # Initialize EasyOCR reader once
 import easyocr
+import torch
+import torchvision.transforms as T
+from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
 reader = easyocr.Reader(['en'], gpu=False)
+
+# Load EfficientNet model
+
+# Find the latest EfficientNet checkpoint in the checkpoints directory
+import glob
+checkpoint_files = sorted(glob.glob(os.path.join(os.getcwd(), 'checkpoints', 'efficientnet_dice_classifier_*.pt')))
+if not checkpoint_files:
+    raise FileNotFoundError("No EfficientNet checkpoint found in /checkpoints. Please train the model first.")
+CHECKPOINT_PATH = checkpoint_files[-1]
+model = efficientnet_b0(weights=None)
+model.classifier[1] = torch.nn.Linear(model.classifier[1].in_features, 6)
+checkpoint = torch.load(CHECKPOINT_PATH, map_location='cpu')
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
+class_names = checkpoint['class_names']
+
+# Preprocessing for model
+model_transform = T.Compose([
+    T.ToPILImage(),
+    T.Resize((224, 224)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+])
 
 def detect_dice_number(frame):
     """Detects the number on a die using OCR (EasyOCR). Returns the detected integer or 0 if not found."""
@@ -62,9 +89,9 @@ def main():
     last_roll = None
     import os
     from datetime import datetime
-    # Create top-level folder with datetime stamp
+    # Create top-level folder with datetime stamp under data/auto-labels
     run_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    save_root = os.path.join(os.getcwd(), run_timestamp)
+    save_root = os.path.join(os.getcwd(), 'data', 'auto-labels', run_timestamp)
     os.makedirs(save_root, exist_ok=True)
     try:
         last_detected_roll = None
@@ -82,19 +109,33 @@ def main():
             if detecting:
                 detection_frames.append(frame.copy())
                 if len(detection_frames) == 5:
-                    # Run detection on 5 frames, collect results
-                    results = [detect_dice_number(f) for f in detection_frames]
-                    # Choose the most common nonzero result
-                    results_nonzero = [r for r in results if r > 0]
-                    if results_nonzero:
-                        from collections import Counter
-                        most_common, _ = Counter(results_nonzero).most_common(1)[0]
-                        roll_counts[most_common] += 1
-                        roll_history.append(most_common)
-                        last_detected_roll = most_common
-                        label = most_common
-                    else:
+                    ocr_results = [detect_dice_number(f) for f in detection_frames]
+                    # Model predictions
+                    model_preds = []
+                    for f in detection_frames:
+                        with torch.no_grad():
+                            input_tensor = model_transform(f).unsqueeze(0)
+                            out = model(input_tensor)
+                            pred = out.argmax(1).item() + 1  # class indices 0-5 -> dice 1-6
+                            model_preds.append(pred)
+                    # Decide label: if all OCR fail, unknown. If OCR and model disagree, unknown.
+                    ocr_valid = [r for r in ocr_results if r > 0]
+                    model_valid = [p for p in model_preds if p > 0]
+                    # Use the most common OCR and model prediction
+                    from collections import Counter
+                    ocr_label = Counter(ocr_valid).most_common(1)[0][0] if ocr_valid else None
+                    model_label = Counter(model_valid).most_common(1)[0][0] if model_valid else None
+                    # If OCR can't recognize, unknown
+                    if ocr_label is None:
                         label = "unknown"
+                    # If OCR and model disagree, unknown
+                    elif ocr_label != model_label:
+                        label = "unknown"
+                    else:
+                        label = ocr_label
+                        roll_counts[label] += 1
+                        roll_history.append(label)
+                        last_detected_roll = label
                     # Save only the middle frame (index 2) to the appropriate folder
                     label_folder = os.path.join(save_root, str(label))
                     os.makedirs(label_folder, exist_ok=True)
