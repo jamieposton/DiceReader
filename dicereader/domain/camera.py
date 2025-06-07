@@ -24,25 +24,22 @@ class Camera:
             print(f"Error getting image from camera: {e}")
             return None
 
-    def save_image(self, frame, info, run_name=None):
+    def save_image(self, frame, info, loop_number, top_level_folder_name):
         """
         Save image to a folder structure based on info dict.
         info: dict with keys 'dice_type' and 'dice_roll'.
-        The image will be saved to: data/<run_name>/<dice_type>/<dice_roll>/img_TIMESTAMP_RANDOM.jpg
-        If run_name is not provided, use today's date/time.
+        The image will be saved to: data/<top_level_folder_name>/<dice_type>/<dice_roll>/img_TIMESTAMP_RANDOM.jpg
         Ensures filename uniqueness with microseconds and a random suffix.
         """
         import random
         import string
-        if run_name is None:
-            run_name = datetime.now().strftime('%Y%m%d_%H%M%S')
         dice_type = info[0].get('dice_type', 'unknown_type')
         dice_roll = str(info[0].get('dice_roll', 'unknown'))
         img_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
         rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
-        folder = os.path.join('data', run_name, dice_type, dice_roll)
+        folder = os.path.join('data', top_level_folder_name, dice_type, dice_roll)
         os.makedirs(folder, exist_ok=True)
-        filename = f"img_{img_timestamp}_{rand_suffix}.jpg"
+        filename = f"img_{img_timestamp}_{rand_suffix}_loop_{loop_number}.jpg"
         path = os.path.join(folder, filename)
         cv2.imwrite(path, frame)
         return path

@@ -28,11 +28,16 @@ def split_frames(frame):
     return frame
 
 def main():
-    if len(sys.argv) > 1:
+
+    if len(sys.argv) > 2:
         pi_address = sys.argv[1]
+        run_name = sys.argv[2]
+    elif len(sys.argv) > 1:
+        pi_address = sys.argv[1]
+        run_name = datetime.now().strftime('%Y%m%d')
     else:
         print("Incorrect usage. Please provide the PI_ADDRESS as an argument.")
-        print("Usage: python orchestrator.py <PI_ADDRESS>")
+        print("Usage: python orchestrator.py PI_ADDRESS RUN_NAME")
         exit()
 
     dumper = Dumper(pi_address=pi_address)
@@ -43,6 +48,7 @@ def main():
         exit()
 
     print(f"Orchestrator is running... Using PI_ADDRESS: {pi_address}")
+    print(f"Run name: {run_name}")
 
     loop_count = 1
     while True:
@@ -64,7 +70,7 @@ def main():
             record_dice(results) # This should also be forwarded to the stream and a database somehow
 
             print("Saving image...")
-            camera.save_image(frame, info=results)
+            camera.save_image(frame, info=results, loop_number=loop_count, run_name=run_name)
 
             # TODO: Depending on the timing of detection and raising the dice tray, we might be able to do this inbetween
             # the image capture and detection steps or something to save time.
