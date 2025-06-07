@@ -2,12 +2,12 @@
 import requests
 
 class Dumper:
-    def __init__(self, pi_address="http://127.0.0.1:5000"):
+    def __init__(self, pi_address):
         self.pi_address = pi_address
 
     def lower_dice_tray(self):
         try:
-            resp = requests.post(f"{self.pi_address}/move_tray_to_bottom")
+            resp = requests.post(f"http://{self.pi_address}/move_tray_to_bottom")
             return resp.status_code == 200
         except Exception as e:
             print(f"Error lowering dice tray: {e}")
@@ -15,7 +15,7 @@ class Dumper:
 
     def raise_dice_tray(self):
         try:
-            resp = requests.post(f"{self.pi_address}/move_tray_to_top")
+            resp = requests.post(f"http://{self.pi_address}/move_tray_to_top")
             return resp.status_code == 200
         except Exception as e:
             print(f"Error raising dice tray: {e}")
@@ -23,7 +23,7 @@ class Dumper:
 
     def sweep_dice(self):
         try:
-            resp = requests.post(f"{self.pi_address}/sweep_dice_into_trough")
+            resp = requests.post(f"http://{self.pi_address}/sweep_dice_into_trough")
             return resp.status_code == 200
         except Exception as e:
             print(f"Error sweeping dice: {e}")
@@ -31,7 +31,7 @@ class Dumper:
 
     def dump_dice(self):
         try:
-            resp = requests.post(f"{self.pi_address}/dump_trough")
+            resp = requests.post(f"http://{self.pi_address}/dump_trough")
             return resp.status_code == 200
         except Exception as e:
             print(f"Error dumping dice: {e}")

@@ -3,15 +3,16 @@ import requests
 import os
 import cv2
 import numpy as np
+from datetime import datetime
 
 class Camera:
-    def __init__(self, pi_address="http://127.0.0.1:5000"):
+    def __init__(self, pi_address):
         self.pi_address = pi_address
 
     def get_image(self):
         """Get an image from the remote camera via GET /get_image. Returns a numpy array (OpenCV image)."""
         try:
-            resp = requests.get(f"{self.pi_address}/get_image")
+            resp = requests.get(f"http://{self.pi_address}/get_image")
             resp.raise_for_status()
             # Assume the response is a JPEG image
             img_array = np.frombuffer(resp.content, np.uint8)
@@ -30,9 +31,8 @@ class Camera:
         The image will be saved to: <dice_type>/<dice_roll>/img_TIMESTAMP.jpg
         """
         #TODO: This makes less sense when we're going to split the image into bounding boxes.
-        from datetime import datetime
-        dice_type = info.get('dice_type', 'unknown_type')
-        dice_roll = str(info.get('dice_roll', 'unknown'))
+        dice_type = info[0].get('dice_type', 'unknown_type')
+        dice_roll = str(info[0].get('dice_roll', 'unknown'))
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
         folder = os.path.join(dice_type, dice_roll)
         os.makedirs(folder, exist_ok=True)
@@ -44,7 +44,7 @@ class Camera:
     def get_camera_status(self):
         """Get camera status from GET /camera_status."""
         try:
-            resp = requests.get(f"{self.pi_address}/camera_status")
+            resp = requests.get(f"http://{self.pi_address}/camera_status")
             resp.raise_for_status()
             return resp.json()  # Assuming the status is returned as JSON
         except Exception as e:

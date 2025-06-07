@@ -8,7 +8,7 @@ def detect_dice(frame):
     Detect dice in the given frame.
     Placeholder function while we're just collecting data.
     """
-    detection = [{"dice_type": "unknown", "dice_roll": unknown, "confidence": 0.0}]
+    detection = [{"dice_type": "unknown", "dice_roll": "unknown", "confidence": 0.0}]
     print("Detected dice:", detection)
     return detection
 
