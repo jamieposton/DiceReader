@@ -5,6 +5,16 @@ class Dumper:
     def __init__(self, pi_address):
         self.pi_address = pi_address
 
+    def alive(self):
+        """Get the status of the dumper."""
+        try:
+            resp = requests.get(f"http://{self.pi_address}/status")
+            resp.raise_for_status()
+            return resp.status_code == 200  # Assuming the status is returned as JSON
+        except Exception as e:
+            print(f"Error getting dumper status: {e}")
+            return False
+
     def lower_dice_tray(self):
         try:
             resp = requests.post(f"http://{self.pi_address}/move_tray_to_bottom")

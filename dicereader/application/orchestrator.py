@@ -37,6 +37,11 @@ def main():
 
     dumper = Dumper(pi_address=pi_address)
     camera = Camera(pi_address=pi_address)
+
+    if not dumper.alive():
+        print("Error: Dumper is not responding. Please check the ip address.")
+        exit()
+
     print(f"Orchestrator is running... Using PI_ADDRESS: {pi_address}")
 
     loop_count = 1
@@ -63,8 +68,12 @@ def main():
 
             # TODO: Depending on the timing of detection and raising the dice tray, we might be able to do this inbetween
             # the image capture and detection steps or something to save time.
+
             print("Raising dice tray...")
-            dumper.raise_dice_tray()
+            success = dumper.raise_dice_tray()
+            if not success:
+                print("Error: Failed to raise dice tray (possibly 500 error). Exiting loop.")
+                break
 
             print("Sweeping dice...")
             dumper.sweep_dice()
