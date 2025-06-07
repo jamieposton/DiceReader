@@ -28,17 +28,21 @@ class Camera:
         """
         Save image to a folder structure based on info dict.
         info: dict with keys 'dice_type' and 'dice_roll'.
-        The image will be saved to: data/<run_name>/<dice_type>/<dice_roll>/img_TIMESTAMP.jpg
+        The image will be saved to: data/<run_name>/<dice_type>/<dice_roll>/img_TIMESTAMP_RANDOM.jpg
         If run_name is not provided, use today's date/time.
+        Ensures filename uniqueness with microseconds and a random suffix.
         """
+        import random
+        import string
         if run_name is None:
             run_name = datetime.now().strftime('%Y%m%d_%H%M%S')
         dice_type = info[0].get('dice_type', 'unknown_type')
         dice_roll = str(info[0].get('dice_roll', 'unknown'))
         img_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
         folder = os.path.join('data', run_name, dice_type, dice_roll)
         os.makedirs(folder, exist_ok=True)
-        filename = f"img_{img_timestamp}.jpg"
+        filename = f"img_{img_timestamp}_{rand_suffix}.jpg"
         path = os.path.join(folder, filename)
         cv2.imwrite(path, frame)
         return path
