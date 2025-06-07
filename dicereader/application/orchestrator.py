@@ -1,9 +1,23 @@
 
-import detect_dice
-import record_dice
 from dicereader.domain.dumper import Dumper
 from dicereader.domain.camera import Camera
 import sys
+
+def detect_dice(frame):
+    """
+    Detect dice in the given frame.
+    Placeholder function while we're just collecting data.
+    """
+    detection = [{"dice_type": "unknown", "dice_roll": unknown, "confidence": 0.0}]
+    print("Detected dice:", detection)
+    return detection
+
+def record_dice(results):
+    """
+    Record the detected dice results.
+    Placeholder function while we're just collecting data.
+    """
+    pass
 
 def split_frames(frame):
     """
@@ -27,24 +41,30 @@ def main():
 
     while True:
         try:
-            # Assuming we're starting with the dice in the the dump trough
+            print("Lowering dice tray...")
             dumper.lower_dice_tray()
 
+            print("Dumping dice...")
             dumper.dump_dice()
 
-
-            # Get image from camera
+            print("Capturing image from camera...")
             frame = camera.get_image()
 
+            print("Detecting dice...")
             results = detect_dice(frame)
 
+            print("Recording dice results...")
             record_dice(results) # This should also be forwarded to the stream and a database somehow
 
-            # Save image using camera domain, with dice roll results
+            print("Saving image...")
             camera.save_image(frame, info=results)
 
+            # TODO: Depending on the timing of detection and raising the dice tray, we might be able to do this inbetween
+            # the image capture and detection steps or something to save time.
+            print("Raising dice tray...")
             dumper.raise_dice_tray()
 
+            print("Sweeping dice...")
             dumper.sweep_dice()
 
         except KeyboardInterrupt:
