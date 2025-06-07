@@ -39,8 +39,10 @@ def main():
     camera = Camera(pi_address=pi_address)
     print(f"Orchestrator is running... Using PI_ADDRESS: {pi_address}")
 
+    loop_count = 1
     while True:
         try:
+            print(f"\n*** Starting loop {loop_count} ***")
             print("Lowering dice tray...")
             dumper.lower_dice_tray()
 
@@ -66,6 +68,7 @@ def main():
 
             print("Sweeping dice...")
             dumper.sweep_dice()
+            loop_count += 1
 
         except KeyboardInterrupt:
             print("Orchestrator stopped by user.")
