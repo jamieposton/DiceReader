@@ -1,9 +1,17 @@
 
 import detect_dice
 import record_dice
-from utilities import set_up_camera_stream, save_image
 from dicereader.domain.dumper import Dumper
+from dicereader.domain.camera import Camera
 import sys
+
+def split_frames(frame):
+    """
+    Split the frame into individual dice images.
+    This is a placeholder function. The actual implementation will depend on how the dice are detected.
+    """
+    # For now, just return the original frame as a single "dice" image
+    return frame
 
 def main():
     if len(sys.argv) > 1:
@@ -14,21 +22,26 @@ def main():
         exit()
 
     dumper = Dumper(pi_address=pi_address)
+    camera = Camera(pi_address=pi_address)
     print(f"Orchestrator is running... Using PI_ADDRESS: {pi_address}")
 
-    set_up_camera_stream()
-    while(True):
+    while True:
         try:
             # Assuming we're starting with the dice in the the dump trough
             dumper.lower_dice_tray()
 
             dumper.dump_dice()
 
-            results = detect_dice()
+
+            # Get image from camera
+            frame = camera.get_image()
+
+            results = detect_dice(frame)
 
             record_dice(results) # This should also be forwarded to the stream and a database somehow
 
-            save_image(results)
+            # Save image using camera domain, with dice roll results
+            camera.save_image(frame, info=results)
 
             dumper.raise_dice_tray()
 
