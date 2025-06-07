@@ -1,14 +1,15 @@
 [tool.poetry]
 name = "dicereader"
 version = "0.1.0"
-description = ""
-authors = ["Jamie Poston <tigerbounces@gmail.com>"]
+description = "Application to control a dice roller via a Raspberry Pi, detect the dice roll, and record the roll."
+authors = ["Jamie Poston <tigerbounces@gmail.com>", "Houston Lucas <namesnonames@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
 opencv-python = "^4.10.0.84"
 easyocr = "*"
+requests = "*"
 torch = "^2.4.0"
 torchvision = "*"
 tqdm = "*"
