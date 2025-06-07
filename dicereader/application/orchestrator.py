@@ -2,18 +2,27 @@
 import detect_dice
 import record_dice
 from utilities import set_up_camera_stream, save_image
-from dicereader.utils.dumper import lower_dice_tray, raise_dice_tray, sweep_dice, dump_dice
+from dicereader.domain.dumper import Dumper
+import sys
 
 def main():
-    print("Orchestrator is running...")
+    if len(sys.argv) > 1:
+        pi_address = sys.argv[1]
+    else:
+        print("Incorrect usage. Please provide the PI_ADDRESS as an argument.")
+        print("Usage: python orchestrator.py <PI_ADDRESS>")
+        exit()
+
+    dumper = Dumper(pi_address=pi_address)
+    print(f"Orchestrator is running... Using PI_ADDRESS: {pi_address}")
 
     set_up_camera_stream()
     while(True):
         try:
             # Assuming we're starting with the dice in the the dump trough
-            lower_dice_tray()
+            dumper.lower_dice_tray()
 
-            dump_dice()
+            dumper.dump_dice()
 
             results = detect_dice()
 
@@ -21,9 +30,9 @@ def main():
 
             save_image(results)
 
-            raise_dice_tray()
+            dumper.raise_dice_tray()
 
-            sweep_dice()
+            dumper.sweep_dice()
 
         except KeyboardInterrupt:
             print("Orchestrator stopped by user.")
