@@ -3,13 +3,20 @@
 from dicereader.domain.dumper import Dumper
 from dicereader.domain.camera import Camera
 from dicereader.domain.model import Model
+
 import sys
 import tempfile
 import cv2
+from collections import Counter
+import matplotlib.pyplot as plt
+
 
 
 # We'll instantiate the model globally so it's loaded only once
 model = None
+
+# Global histogram counter
+dice_histogram = Counter()
 
 def detect_dice(frame):
     """
@@ -25,12 +32,30 @@ def detect_dice(frame):
     print("Detected dice:", detection)
     return detection
 
-def record_dice(results):
+
+def record_dice(results, histogram_path="histogram.png"):
     """
-    Record the detected dice results.
-    Placeholder function while we're just collecting data.
+    Record the detected dice results and update the histogram.
+    Saves the histogram as a PNG for OBS integration.
     """
-    pass
+    global dice_histogram
+    # Assume results is a list of dicts with 'dice_roll' key
+    for res in results:
+        dice_roll = res.get("dice_roll", None)
+        if dice_roll is not None:
+            dice_histogram[str(dice_roll)] += 1
+    # Plot and save histogram
+    if dice_histogram:
+        plt.figure(figsize=(6,4))
+        items = sorted(dice_histogram.items(), key=lambda x: x[0])
+        labels, values = zip(*items)
+        plt.bar(labels, values, color='skyblue')
+        plt.xlabel('Dice Number')
+        plt.ylabel('Count')
+        plt.title('Dice Roll Histogram')
+        plt.tight_layout()
+        plt.savefig(histogram_path)
+        plt.close()
 
 def split_frames(frame):
     """
@@ -79,8 +104,9 @@ def main():
             print("Detecting dice...")
             results = detect_dice(frame)
 
-            print("Recording dice results...")
-            record_dice(results) # This should also be forwarded to the stream and a database somehow
+
+            print("Recording dice results and updating histogram...")
+            record_dice(results, histogram_path="histogram.png")
 
             print("Saving image...")
             camera.save_image(frame, info=results, loop_number=loop_count, run_name=run_name)
