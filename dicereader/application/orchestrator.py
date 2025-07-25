@@ -1,5 +1,3 @@
-
-
 from dicereader.domain.dumper import Dumper
 from dicereader.domain.camera import Camera
 from dicereader.domain.model import Model
@@ -9,6 +7,7 @@ import tempfile
 import cv2
 from collections import Counter
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 
 
@@ -17,6 +16,14 @@ model = None
 
 # Global histogram counter
 dice_histogram = Counter()
+
+# Status log file for OBS
+STATUS_LOG_PATH = "/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/status.txt"
+
+def log_status(message):
+    print(message)
+    with open(STATUS_LOG_PATH, "w") as f:
+        f.write(message + "\n")
 
 def detect_dice(frame):
     """
@@ -31,7 +38,6 @@ def detect_dice(frame):
     detection = [{"dice_type": "die", "dice_roll": category, "confidence": score}]
     print("Detected dice:", detection)
     return detection
-
 
 def record_dice(results, histogram_path="histogram.png"):
     """
@@ -85,49 +91,49 @@ def main():
         print("Error: Dumper is not responding. Please check the ip address.")
         exit()
 
-    print(f"Orchestrator is running... Using PI_ADDRESS: {pi_address}")
-    print(f"Run name: {run_name}")
+    log_status(f"Orchestrator is running... Using PI_ADDRESS: {pi_address}")
+    log_status(f"Run name: {run_name}")
 
     loop_count = 1
     while True:
         try:
-            print(f"\n*** Starting loop {loop_count} ***")
-            print("Lowering dice tray...")
+            log_status(f"\n*** Starting loop {loop_count} ***")
+            log_status("Lowering dice tray...")
             dumper.lower_dice_tray()
 
-            print("Dumping dice...")
+            log_status("Dumping dice...")
             dumper.dump_dice()
 
-            print("Capturing image from camera...")
+            log_status("Capturing image from camera...")
             frame = camera.get_image()
 
-            print("Detecting dice...")
+            log_status("Detecting dice...")
             results = detect_dice(frame)
 
+            log_status("Recording dice results and updating histogram...")
+            record_dice(results, histogram_path="/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/histogram.png")
 
-            print("Recording dice results and updating histogram...")
-            record_dice(results, histogram_path="histogram.png")
-
-            print("Saving image...")
-            camera.save_image(frame, info=results, loop_number=loop_count, run_name=run_name)
+            log_status("Saving image...")
+            camera.save_image(frame, info=results, loop_number=loop_count, top_level_folder_name=run_name)
 
             # TODO: Depending on the timing of detection and raising the dice tray, we might be able to do this inbetween
             # the image capture and detection steps or something to save time.
 
-            print("Raising dice tray...")
+            log_status("Raising dice tray...")
             success = dumper.raise_dice_tray()
             if not success:
-                print("Error: Failed to raise dice tray (possibly 500 error). Exiting loop.")
+                log_status("Error: Failed to raise dice tray (possibly 500 error). Exiting loop.")
                 break
 
-            print("Sweeping dice...")
+            log_status("Sweeping dice...")
             dumper.sweep_dice()
             loop_count += 1
 
         except KeyboardInterrupt:
-            print("Orchestrator stopped by user.")
+            log_status("Orchestrator stopped by user.")
             break
         except Exception as e:
+            log_status("Error occurred. Halp.")
             print(f"An error occurred: {e}")
             break
 
