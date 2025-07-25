@@ -1,6 +1,6 @@
 from dicereader.domain.dumper import Dumper
 from dicereader.domain.camera import Camera
-from dicereader.domain.model import Model
+from dicereader.domain.model import Model, OCRModel
 
 import sys
 import tempfile
@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
-
 # We'll instantiate the model globally so it's loaded only once
 model = None
+ocr_model = None
 
 # Global histogram counter
 dice_histogram = Counter()
@@ -30,11 +30,17 @@ def detect_dice(frame):
     Detect dice in the given frame using the Model class.
     For now, assumes the whole frame is a single die.
     """
-    global model
-    if model is None:
-        # You may want to change this to your actual model checkpoint
-        model = Model(model_location=None)
-    category, score = model.predict(frame)
+    global model, ocr_model
+    # Choose which model to use: set USE_OCR = True to use OCRModel
+    USE_OCR = True
+    if USE_OCR:
+        if ocr_model is None:
+            ocr_model = OCRModel()
+        category, score = ocr_model.predict(frame)
+    else:
+        if model is None:
+            model = Model(model_location=None)
+        category, score = model.predict(frame)
     detection = [{"dice_type": "die", "dice_roll": category, "confidence": score}]
     print("Detected dice:", detection)
     return detection
@@ -140,7 +146,7 @@ def main():
             log_status("Raising dice tray...")
             success = dumper.raise_dice_tray()
             if not success:
-                log_status("Error: Failed to raise dice tray (possibly 500 error). Exiting loop.")
+                log_status("Failed to raise dice tray. Exiting loop.")
                 break
 
             log_status("Sweeping dice...")

@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torchvision.models import resnet50, ResNet50_Weights
 from torchvision.io import read_image
@@ -27,3 +28,46 @@ class Model:
         score = prediction[class_id].item()
         category_name = self.weights.meta["categories"][class_id]
         return category_name, score
+
+
+class OCRModel:
+    def __init__(self):
+        import easyocr
+        self.reader = easyocr.Reader(['en'], gpu=False)
+
+    def predict(self, image):
+        """
+        image: numpy array (OpenCV BGR)
+        Rotates the image multiple ways and uses OCR to predict the dice number.
+        Returns the most common non-None prediction and its vote count.
+        """
+        import cv2
+        votes = []
+        angles = [0, 90, 180, 270]
+        for angle in angles:
+            rot_img = self.rotate_image(image, angle)
+            result = self.reader.readtext(rot_img, detail=0)
+            # Filter to digits only
+            digits = [s for s in result if s.isdigit()]
+            if digits:
+                votes.extend(digits)
+        if votes:
+            # Majority vote
+            from collections import Counter
+            vote_counts = Counter(votes)
+            best, count = vote_counts.most_common(1)[0]
+            return best, count / len(angles)
+        else:
+            return None, 0.0
+
+    @staticmethod
+    def rotate_image(image, angle):
+        """Rotate image by angle degrees."""
+        import cv2
+        if angle == 0:
+            return image
+        (h, w) = image.shape[:2]
+        center = (w // 2, h // 2)
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        rotated = cv2.warpAffine(image, M, (w, h))
+        return rotated
