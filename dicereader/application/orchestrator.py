@@ -2,6 +2,7 @@ from dicereader.domain.dumper import Dumper
 from dicereader.domain.camera import Camera
 from dicereader.domain.model import Model, OCRModel
 
+import os
 import sys
 import tempfile
 import cv2
@@ -19,6 +20,25 @@ dice_histogram = Counter()
 
 # Status log file for OBS
 STATUS_LOG_PATH = "/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/status.txt"
+
+# Directory to save blob images with overlays
+BLOBS_IMG_DIR = "/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/blobs"
+
+def save_blob_images_with_overlay(dice_images, results, loop_count):
+    """
+    Save each dice blob image with an overlay of its prediction.
+    """
+    os.makedirs(BLOBS_IMG_DIR, exist_ok=True)
+    import cv2
+    for idx, (img, res) in enumerate(zip(dice_images, results)):
+        dice_roll = res.get("dice_roll", "?")
+        confidence = res.get("confidence", 0.0)
+        overlay_img = img.copy()
+        text = f"{dice_roll} ({confidence:.2f})"
+        cv2.putText(overlay_img, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+        filename = f"blob_loop{loop_count}_idx{idx+1}.jpg"
+        path = os.path.join(BLOBS_IMG_DIR, filename)
+        cv2.imwrite(path, overlay_img)
 
 def log_status(message):
     print(message)
@@ -136,6 +156,7 @@ def main():
 
             log_status("Recording dice results and updating histogram...")
             record_dice(results, histogram_path="/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/histogram.png")
+            save_blob_images_with_overlay(dice_images, results, loop_count)
 
             log_status("Saving image...")
             camera.save_image(frame, info=results, loop_number=loop_count, top_level_folder_name=run_name)
