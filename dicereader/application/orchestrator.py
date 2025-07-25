@@ -65,11 +65,22 @@ def record_dice(results, histogram_path="histogram.png"):
 
 def split_frames(frame):
     """
-    Split the frame into individual dice images.
-    This is a placeholder function. The actual implementation will depend on how the dice are detected.
+    Split the frame into individual dice images using contour detection.
+    Returns a list of cropped dice images.
     """
-    # For now, just return the original frame as a single "dice" image
-    return frame
+    import cv2
+    dice_images = []
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, thresh = cv2.threshold(blur, 120, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for cnt in contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        # Filter out small blobs (noise)
+        if w * h > 500:  # Adjust this threshold as needed
+            dice_img = frame[y:y+h, x:x+w]
+            dice_images.append(dice_img)
+    return dice_images
 
 def main():
 
@@ -107,8 +118,15 @@ def main():
             log_status("Capturing image from camera...")
             frame = camera.get_image()
 
-            log_status("Detecting dice...")
-            results = detect_dice(frame)
+
+            log_status("Splitting frame into dice blobs...")
+            dice_images = split_frames(frame)
+            log_status(f"Found {len(dice_images)} dice blobs.")
+            results = []
+            for idx, dice_img in enumerate(dice_images):
+                log_status(f"Detecting dice for blob {idx+1}...")
+                detected = detect_dice(dice_img)
+                results.extend(detected)
 
             log_status("Recording dice results and updating histogram...")
             record_dice(results, histogram_path="/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/histogram.png")
