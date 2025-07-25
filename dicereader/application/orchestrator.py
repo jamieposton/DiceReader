@@ -144,17 +144,16 @@ def main():
             log_status("Capturing image from camera...")
             frame = camera.get_image()
 
-
-            log_status("Splitting frame into dice blobs...")
+            log_status("Recording dice results and updating histogram...")
+            print("Splitting frame into dice blobs...")
             dice_images = split_frames(frame)
-            log_status(f"Found {len(dice_images)} dice blobs.")
+            print(f"Found {len(dice_images)} dice blobs.")
             results = []
             for idx, dice_img in enumerate(dice_images):
-                log_status(f"Detecting dice for blob {idx+1}...")
+                print(f"Detecting dice for blob {idx+1}...")
                 detected = detect_dice(dice_img)
                 results.extend(detected)
 
-            log_status("Recording dice results and updating histogram...")
             record_dice(results, histogram_path="/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/histogram.png")
             save_blob_images_with_overlay(dice_images, results, loop_count)
 
