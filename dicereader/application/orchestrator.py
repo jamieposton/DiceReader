@@ -1,14 +1,27 @@
 
+
 from dicereader.domain.dumper import Dumper
 from dicereader.domain.camera import Camera
+from dicereader.domain.model import Model
 import sys
+import tempfile
+import cv2
+
+
+# We'll instantiate the model globally so it's loaded only once
+model = None
 
 def detect_dice(frame):
     """
-    Detect dice in the given frame.
-    Placeholder function while we're just collecting data.
+    Detect dice in the given frame using the Model class.
+    For now, assumes the whole frame is a single die.
     """
-    detection = [{"dice_type": "unknown", "dice_roll": "unknown", "confidence": 0.0}]
+    global model
+    if model is None:
+        # You may want to change this to your actual model checkpoint
+        model = Model(model_location=None)
+    category, score = model.predict(frame)
+    detection = [{"dice_type": "die", "dice_roll": category, "confidence": score}]
     print("Detected dice:", detection)
     return detection
 
