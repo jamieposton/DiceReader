@@ -29,16 +29,36 @@ def save_blob_images_with_overlay(dice_images, results, loop_count):
     Save each dice blob image with an overlay of its prediction.
     """
     os.makedirs(BLOBS_IMG_DIR, exist_ok=True)
-    import cv2
+    overlay_images = []
+    target_height = 100
+    target_width = 100
     for idx, (img, res) in enumerate(zip(dice_images, results)):
         dice_roll = res.get("dice_roll", "?")
         confidence = res.get("confidence", 0.0)
         overlay_img = img.copy()
         text = f"{dice_roll} ({confidence:.2f})"
         cv2.putText(overlay_img, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
-        filename = f"blob_loop{loop_count}_idx{idx+1}.jpg"
+
+        # Resize keeping aspect ratio, then pad to 100x100 with black border
+        h, w = overlay_img.shape[:2]
+        scale = target_height / h
+        new_w = int(w * scale)
+        if new_w > target_width:
+            # If resized width is too large, resize directly to 100x100 (may distort aspect ratio)
+            padded = cv2.resize(overlay_img, (target_width, target_height))
+        else:
+            resized = cv2.resize(overlay_img, (new_w, target_height))
+            pad_left = max((target_width - new_w) // 2, 0)
+            pad_right = max(target_width - new_w - pad_left, 0)
+            padded = cv2.copyMakeBorder(resized, 0, 0, pad_left, pad_right, cv2.BORDER_CONSTANT, value=[0,0,0])
+        overlay_images.append(padded)
+
+    # Stitch images horizontally (side by side)
+    if overlay_images:
+        stitched_img = cv2.hconcat(overlay_images)
+        filename = "blobs.jpg"
         path = os.path.join(BLOBS_IMG_DIR, filename)
-        cv2.imwrite(path, overlay_img)
+        cv2.imwrite(path, stitched_img)
 
 def log_status(message):
     print(message)
