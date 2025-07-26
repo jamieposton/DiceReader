@@ -2,6 +2,7 @@ from dicereader.domain.dumper import Dumper
 from dicereader.domain.camera import Camera
 from dicereader.domain.model import Model, OCRModel
 
+import numpy as np
 import os
 import sys
 import tempfile
@@ -114,7 +115,6 @@ def split_frames(frame):
     Split the frame into individual dice images using contour detection.
     Returns a list of cropped dice images.
     """
-    import cv2
     dice_images = []
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -132,6 +132,13 @@ def split_frames(frame):
             if 0.7 <= aspect_ratio <= 1.3:
                 dice_img = frame[y:y+h, x:x+w]
                 dice_images.append(dice_img)
+    # If no dice blobs found, create dummy blobs.jpg here
+    if not dice_images:
+        dummy_img = np.zeros((100, 300, 3), dtype=np.uint8)
+        cv2.putText(dummy_img, "No dice detected", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+        filename = "blobs.jpg"
+        path = os.path.join(BLOBS_IMG_DIR, filename)
+        cv2.imwrite(path, dummy_img)
     return dice_images
 
 def main():
@@ -173,15 +180,17 @@ def main():
             log_status("Recording dice results and updating histogram...")
             print("Splitting frame into dice blobs...")
             dice_images = split_frames(frame)
-            print(f"Found {len(dice_images)} dice blobs.")
             results = []
-            for idx, dice_img in enumerate(dice_images):
-                print(f"Detecting dice for blob {idx+1}...")
-                detected = detect_dice(dice_img)
-                results.extend(detected)
-
-            record_dice(results, histogram_path="/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/histogram.png")
-            save_blob_images_with_overlay(dice_images, results, loop_count)
+            if dice_images:
+                print(f"Found {len(dice_images)} dice blobs.")
+                for idx, dice_img in enumerate(dice_images):
+                    print(f"Detecting dice for blob {idx+1}...")
+                    detected = detect_dice(dice_img)
+                    results.extend(detected)
+                record_dice(results, histogram_path="/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/histogram.png")
+                save_blob_images_with_overlay(dice_images, results, loop_count)
+            else:
+                print("No dice blobs found. Skipping detection and overlay creation.")
 
             log_status("Saving image...")
             camera.save_image(frame, info=results, loop_number=loop_count, top_level_folder_name=run_name)

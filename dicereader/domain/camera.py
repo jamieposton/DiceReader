@@ -1,4 +1,6 @@
 # camera.py - domain logic for camera operations
+import random
+import string
 import requests
 import os
 import cv2
@@ -31,10 +33,12 @@ class Camera:
         The image will be saved to: data/<top_level_folder_name>/<dice_type>/<dice_roll>/img_TIMESTAMP_RANDOM.jpg
         Ensures filename uniqueness with microseconds and a random suffix.
         """
-        import random
-        import string
-        dice_type = info[0].get('dice_type', 'unknown_type')
-        dice_roll = str(info[0].get('dice_roll', 'unknown'))
+        if info:
+            dice_type = info[0].get('dice_type', 'unknown_type')
+            dice_roll = str(info[0].get('dice_roll', 'unknown'))
+        else:
+            dice_type = 'unknown_type'
+            dice_roll = 'unknown'
         img_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
         rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
         folder = os.path.join('data', top_level_folder_name, dice_type, dice_roll)
