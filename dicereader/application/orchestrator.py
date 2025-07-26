@@ -1,6 +1,6 @@
 from dicereader.domain.dumper import Dumper
 from dicereader.domain.camera import Camera
-from dicereader.domain.model import Model, OCRModel
+from dicereader.domain.model import OCRModel
 
 import numpy as np
 import os
@@ -46,9 +46,9 @@ def save_blob_images_with_overlay(results, loop_count):
         path = os.path.join(BLOBS_IMG_DIR, filename)
         cv2.imwrite(path, dummy_img)
         return
-    for idx, (label, confidence, image) in enumerate(results):
+    for idx, (label, die_type, image) in enumerate(results):
         overlay_img = image.copy()
-        text = f"{label} ({confidence:.2f})"
+        text = f"{label} ({die_type})"
         cv2.putText(overlay_img, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
 
         # Resize keeping aspect ratio, then pad to 100x100 with black border
@@ -77,17 +77,10 @@ def detect_dice(frame):
     Detect dice in the given frame using the Model class.
     For now, assumes the whole frame is a single die.
     """
-    global model, ocr_model
-    # Choose which model to use: set USE_OCR = True to use OCRModel
-    USE_OCR = True
-    if USE_OCR:
-        if ocr_model is None:
-            ocr_model = OCRModel()
-        results = ocr_model.predict(frame)
-    else:
-        if model is None:
-            model = Model(model_location=None)
-        results = model.predict(frame)
+    global ocr_model
+    if ocr_model is None:
+        ocr_model = OCRModel()
+    results = ocr_model.predict(frame)
     return results
 
 def record_dice(results, histogram_path="histogram.png"):

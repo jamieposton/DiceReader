@@ -12,7 +12,7 @@ import glob
 BASENAME = os.getcwd()
 from datetime import datetime
 # Use all curated label folders
-DATA_DIR = os.path.join(BASENAME, 'data', 'curated-labels')
+DATA_DIR = os.path.join(BASENAME, 'data', 'labeled_data/die_type/')
 print(f"Using all curated data in: {DATA_DIR}")
 
 class AllRunsImageFolder(datasets.ImageFolder):
@@ -27,7 +27,7 @@ timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 MODEL_SAVE_PATH = os.path.join(CHECKPOINTS_DIR, f'efficientnet_dice_classifier_{timestamp}.pt')
 BATCH_SIZE = 32
 NUM_EPOCHS = 10
-NUM_CLASSES = 6
+NUM_CLASSES = 8
 IMG_SIZE = 224  # EfficientNet-B0 default
 LR = 1e-3
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
