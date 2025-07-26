@@ -159,12 +159,10 @@ def main():
             record_dice(results, histogram_path="/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/histogram.png")
             save_blob_images_with_overlay(results, loop_count)
 
+            print("Saving images...")
             if results:
                 for result in results:
-                    camera.save_blob_image(result, loop_count)
-
-            log_status("Saving image...")
-            camera.save_image(frame, info=results, loop_number=loop_count, top_level_folder_name=run_name)
+                    camera.save_blob_image(result, loop_count, top_level_folder_name="unlabeled_data")
 
             # TODO: Depending on the timing of detection and raising the dice tray, we might be able to do this inbetween
             # the image capture and detection steps or something to save time.

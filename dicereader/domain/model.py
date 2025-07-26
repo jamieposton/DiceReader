@@ -144,7 +144,7 @@ class OCRModel:
                 print(f"Blob {i+1}: Detected number {best} with confidence {count / len(angles):.2f}")
             else:
                 print(f"No digits detected for blob {i+1}.")
-                results.append((None, 0.0, image))
+                results.append(("?", 0.0, image))
         return results
 
     def split_frames(self, frame):
