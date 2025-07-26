@@ -123,7 +123,6 @@ class OCRModel:
         Returns the list of the most common non-None prediction and its vote count.
         """
         dice_images = self.split_frames(frame)
-        self.save_blobs_for_labeling(dice_images)
         results = []
         print(f"Found {len(dice_images)} blobs.")
         for i, image in enumerate(dice_images):
@@ -142,8 +141,11 @@ class OCRModel:
                 vote_counts = Counter(votes)
                 best, count = vote_counts.most_common(1)[0]
                 results.append((best, count / len(angles), image))
+                print(f"Blob {i+1}: Detected number {best} with confidence {count / len(angles):.2f}")
             else:
+                print(f"No digits detected for blob {i+1}.")
                 results.append((None, 0.0, image))
+        return results
 
     def split_frames(self, frame):
         """
@@ -168,19 +170,6 @@ class OCRModel:
                     dice_img = frame[y:y+h, x:x+w]
                     dice_images.append(dice_img)
         return dice_images
-
-    def save_blobs_for_labeling(self, dice_images):
-        """
-        Save each blob image into ./data/unlabeled_data/blobs/ for later labeling.
-        """
-
-        save_dir = os.path.join("data", "unlabeled_data", "blobs")
-        os.makedirs(save_dir, exist_ok=True)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-        for idx, img in enumerate(dice_images):
-            filename = f"blob_{timestamp}_{idx+1}.png"
-            path = os.path.join(save_dir, filename)
-            cv2.imwrite(path, img)
 
 
     @staticmethod

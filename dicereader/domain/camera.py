@@ -26,26 +26,21 @@ class Camera:
             print(f"Error getting image from camera: {e}")
             return None
 
-    def save_image(self, frame, info, loop_number, top_level_folder_name):
+    def save_blob_image(self, result_tuple, loop_number, top_level_folder_name='unlabeled_data'):
         """
-        Save image to a folder structure based on info dict.
-        info: dict with keys 'dice_type' and 'dice_roll'.
-        The image will be saved to: data/<top_level_folder_name>/<dice_type>/<dice_roll>/img_TIMESTAMP_RANDOM.jpg
+        Save a dice blob image to a folder structure based on its label.
+        result_tuple: (label, confidence, image)
+        The image will be saved to: data/<top_level_folder_name>/<label>/img_TIMESTAMP_RANDOM.jpg
         Ensures filename uniqueness with microseconds and a random suffix.
         """
-        if info:
-            dice_type = info[0].get('dice_type', 'unknown_type')
-            dice_roll = str(info[0].get('dice_roll', 'unknown'))
-        else:
-            dice_type = 'unknown_type'
-            dice_roll = 'unknown'
+        label, confidence, image = result_tuple
         img_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
         rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
-        folder = os.path.join('data', top_level_folder_name, dice_type, dice_roll)
+        folder = os.path.join('data', top_level_folder_name, label)
         os.makedirs(folder, exist_ok=True)
         filename = f"img_{img_timestamp}_{rand_suffix}_loop_{loop_number}.jpg"
         path = os.path.join(folder, filename)
-        cv2.imwrite(path, frame)
+        cv2.imwrite(path, image)
         return path
 
     def get_camera_status(self):
