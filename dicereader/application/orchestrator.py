@@ -92,24 +92,58 @@ def record_dice(results, histogram_path="histogram.png"):
     global dice_histogram
     if not results:
         return
+    # Each result: (label, die_type, image)
     for result in results:
-        dice_roll = result[0]
+        dice_roll, die_type, _ = result
         if dice_roll is not None:
-            dice_histogram[str(dice_roll)] += 1
+            dice_histogram[(str(dice_roll), die_type)] += 1
         else:
-            dice_histogram['unknown'] += 1
-    # Plot and save histogram
-    if dice_histogram:
-        plt.figure(figsize=(6,4))
-        items = sorted(dice_histogram.items(), key=lambda x: x[0])
-        labels, values = zip(*items)
-        plt.bar(labels, values, color='skyblue')
-        plt.xlabel('Dice Number')
-        plt.ylabel('Count')
-        plt.title('Dice Roll Histogram')
-        plt.tight_layout()
-        plt.savefig(histogram_path)
-        plt.close()
+            dice_histogram[("unknown", "unknown")] += 1
+
+    # Define colors for die types
+    die_type_colors = {
+        "D4": "#e6194b", "D6": "#3cb44b", "D8": "#ffe119", "D10": "#4363d8",
+        "P": "#f58231", "D12": "#911eb4", "D20": "#46f0f0", "unknown": "#a9a9a9"
+    }
+
+    # Build stacked bar chart data
+    # Group by dice result, then count per die type
+    from collections import defaultdict
+    result_die_type_counts = defaultdict(lambda: defaultdict(int))
+    for (dice_roll, die_type), count in dice_histogram.items():
+        result_die_type_counts[dice_roll][die_type] += count
+
+    # Sort dice results: percentile first, then numeric
+    def result_sort_key(val):
+        try:
+            # Percentile die: '00', '10', ..., '90'
+            if val == "unknown":
+                return (2, val)
+            if len(val) == 2 and val.isdigit() and val.startswith("0"):
+                return (0, int(val))
+            return (1, int(val))
+        except:
+            return (2, val)
+
+    sorted_results = sorted(result_die_type_counts.keys(), key=result_sort_key)
+    die_types = list(die_type_colors.keys())
+
+    # Prepare data for stacked bars
+    bar_bottoms = np.zeros(len(sorted_results))
+    fig_width = 500 / 72  # inches
+    plt.figure(figsize=(fig_width, 5))
+    for die_type in die_types:
+        counts = [result_die_type_counts[result].get(die_type, 0) for result in sorted_results]
+        plt.bar(sorted_results, counts, bottom=bar_bottoms, color=die_type_colors.get(die_type, "#a9a9a9"), label=die_type)
+        bar_bottoms += np.array(counts)
+    plt.xlabel('Dice Result')
+    plt.ylabel('Count')
+    plt.title('Dice Roll Stacked Bar Chart')
+    plt.xticks(rotation=45, ha='right')
+    plt.legend(title="Die Type", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.savefig(histogram_path, bbox_inches='tight')
+    plt.close()
 
 def main():
 
