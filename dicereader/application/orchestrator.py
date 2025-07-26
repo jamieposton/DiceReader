@@ -120,12 +120,18 @@ def split_frames(frame):
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
     _, thresh = cv2.threshold(blur, 120, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    frame_h, frame_w = frame.shape[:2]
+    max_blob_area = 0.2 * frame_w * frame_h  # blobs must be less than 20% of the frame area
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
-        # Filter out small blobs (noise)
-        if w * h > 500:  # Adjust this threshold as needed
-            dice_img = frame[y:y+h, x:x+w]
-            dice_images.append(dice_img)
+        blob_area = w * h
+        # Filter out small blobs (noise) and blobs that are too large
+        if 500 < blob_area < max_blob_area:
+            aspect_ratio = w / h if h != 0 else 0
+            # Only keep near-square blobs (aspect ratio between 0.7 and 1.3)
+            if 0.7 <= aspect_ratio <= 1.3:
+                dice_img = frame[y:y+h, x:x+w]
+                dice_images.append(dice_img)
     return dice_images
 
 def main():
