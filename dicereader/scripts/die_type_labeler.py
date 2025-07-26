@@ -49,7 +49,8 @@ class ImageLabeler:
             label_dir = os.path.join(output_root, label)
             os.makedirs(label_dir, exist_ok=True)
             shutil.copy(img_path, label_dir)
-            print(f"Labeled {img_file} as {label}")
+            os.remove(img_path)
+            print(f"Labeled {img_file} as {label} and deleted from input folder")
 
 # Example usage for die type labeling:
 if __name__ == "__main__":
