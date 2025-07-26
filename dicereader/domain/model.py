@@ -21,7 +21,7 @@ DIE_TYPE_OPTIONS = {
     "D6": list(range(1, 7)),
     "D8": list(range(1, 9)),
     "D10": list(range(1, 11)),
-    "P": [f"{i:02d}" for i in range(0, 100, 10)],  # Percentile die: '00', '10', ..., '90'
+    "P": [i for i in range(10, 100, 10)] + [00],  # Percentile die: '00', '10', ..., '90'
     "D12": list(range(1, 13)),
     "D20": list(range(1, 21)),
 }
