@@ -10,6 +10,7 @@ import cv2
 from collections import Counter
 import matplotlib.pyplot as plt
 from datetime import datetime
+import traceback
 
 
 # We'll instantiate the model globally so it's loaded only once
@@ -22,10 +23,14 @@ dice_histogram = Counter()
 # Status log file for OBS
 STATUS_LOG_PATH = "/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/status.txt"
 
-# Directory to save blob images with overlays
 BLOBS_IMG_DIR = "/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/blobs"
 
-def save_blob_images_with_overlay(dice_images, results, loop_count):
+def log_status(message):
+    print(message)
+    with open(STATUS_LOG_PATH, "w") as f:
+        f.write(message + "\n")
+
+def save_blob_images_with_overlay(results, loop_count):
     """
     Save each dice blob image with an overlay of its prediction.
     """
@@ -33,11 +38,17 @@ def save_blob_images_with_overlay(dice_images, results, loop_count):
     overlay_images = []
     target_height = 100
     target_width = 100
-    for idx, (img, res) in enumerate(zip(dice_images, results)):
-        dice_roll = res.get("dice_roll", "?")
-        confidence = res.get("confidence", 0.0)
-        overlay_img = img.copy()
-        text = f"{dice_roll} ({confidence:.2f})"
+    if not results:
+        # Create a dummy image with 'No dice detected' text
+        dummy_img = np.zeros((100, 300, 3), dtype=np.uint8)
+        cv2.putText(dummy_img, "No dice detected", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+        filename = "blobs.jpg"
+        path = os.path.join(BLOBS_IMG_DIR, filename)
+        cv2.imwrite(path, dummy_img)
+        return
+    for idx, (label, confidence, image) in enumerate(results):
+        overlay_img = image.copy()
+        text = f"{label} ({confidence:.2f})"
         cv2.putText(overlay_img, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
 
         # Resize keeping aspect ratio, then pad to 100x100 with black border
@@ -61,11 +72,6 @@ def save_blob_images_with_overlay(dice_images, results, loop_count):
         path = os.path.join(BLOBS_IMG_DIR, filename)
         cv2.imwrite(path, stitched_img)
 
-def log_status(message):
-    print(message)
-    with open(STATUS_LOG_PATH, "w") as f:
-        f.write(message + "\n")
-
 def detect_dice(frame):
     """
     Detect dice in the given frame using the Model class.
@@ -77,14 +83,12 @@ def detect_dice(frame):
     if USE_OCR:
         if ocr_model is None:
             ocr_model = OCRModel()
-        category, score = ocr_model.predict(frame)
+        results = ocr_model.predict(frame)
     else:
         if model is None:
             model = Model(model_location=None)
-        category, score = model.predict(frame)
-    detection = [{"dice_type": "die", "dice_roll": category, "confidence": score}]
-    print("Detected dice:", detection)
-    return detection
+        results = model.predict(frame)
+    return results
 
 def record_dice(results, histogram_path="histogram.png"):
     """
@@ -92,11 +96,14 @@ def record_dice(results, histogram_path="histogram.png"):
     Saves the histogram as a PNG for OBS integration.
     """
     global dice_histogram
-    # Assume results is a list of dicts with 'dice_roll' key
-    for res in results:
-        dice_roll = res.get("dice_roll", None)
+    if not results:
+        return
+    for result in results:
+        dice_roll = result[0]
         if dice_roll is not None:
             dice_histogram[str(dice_roll)] += 1
+        else:
+            dice_histogram['unknown'] += 1
     # Plot and save histogram
     if dice_histogram:
         plt.figure(figsize=(6,4))
@@ -109,52 +116,6 @@ def record_dice(results, histogram_path="histogram.png"):
         plt.tight_layout()
         plt.savefig(histogram_path)
         plt.close()
-
-
-def save_blobs_for_labeling(dice_images):
-    """
-    Save each blob image into ./data/unlabeled_data/blobs/ for later labeling.
-    """
-
-    save_dir = os.path.join("data", "unlabeled_data", "blobs")
-    os.makedirs(save_dir, exist_ok=True)
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-    for idx, img in enumerate(dice_images):
-        filename = f"blob_{timestamp}_{idx+1}.png"
-        path = os.path.join(save_dir, filename)
-        cv2.imwrite(path, img)
-
-
-def split_frames(frame):
-    """
-    Split the frame into individual dice images using contour detection.
-    Returns a list of cropped dice images.
-    """
-    dice_images = []
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
-    _, thresh = cv2.threshold(blur, 120, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    frame_h, frame_w = frame.shape[:2]
-    max_blob_area = 0.2 * frame_w * frame_h  # blobs must be less than 20% of the frame area
-    for cnt in contours:
-        x, y, w, h = cv2.boundingRect(cnt)
-        blob_area = w * h
-        # Filter out small blobs (noise) and blobs that are too large
-        if 500 < blob_area < max_blob_area:
-            aspect_ratio = w / h if h != 0 else 0
-            # Only keep near-square blobs (aspect ratio between 0.7 and 1.3)
-            if 0.7 <= aspect_ratio <= 1.3:
-                dice_img = frame[y:y+h, x:x+w]
-                dice_images.append(dice_img)
-    # If no dice blobs found, create dummy blobs.jpg here
-    if not dice_images:
-        dummy_img = np.zeros((100, 300, 3), dtype=np.uint8)
-        cv2.putText(dummy_img, "No dice detected", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
-        filename = "blobs.jpg"
-        path = os.path.join(BLOBS_IMG_DIR, filename)
-        cv2.imwrite(path, dummy_img)
-    return dice_images
 
 def main():
 
@@ -194,20 +155,9 @@ def main():
 
             log_status("Recording dice results and updating histogram...")
             print("Splitting frame into dice blobs...")
-            dice_images = split_frames(frame)
-            # Save blobs for labeling
-            results = []
-            if dice_images:
-                save_blobs_for_labeling(dice_images)
-                print(f"Found {len(dice_images)} dice blobs.")
-                for idx, dice_img in enumerate(dice_images):
-                    print(f"Detecting dice for blob {idx+1}...")
-                    detected = detect_dice(dice_img)
-                    results.extend(detected)
-                record_dice(results, histogram_path="/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/histogram.png")
-                save_blob_images_with_overlay(dice_images, results, loop_count)
-            else:
-                print("No dice blobs found. Skipping detection and overlay creation.")
+            results = detect_dice(frame)
+            record_dice(results, histogram_path="/mnt/c/Users/tiger/OneDrive/Pictures/DiceRoller/histogram.png")
+            save_blob_images_with_overlay(results, loop_count)
 
             log_status("Saving image...")
             camera.save_image(frame, info=results, loop_number=loop_count, top_level_folder_name=run_name)
@@ -231,6 +181,7 @@ def main():
         except Exception as e:
             log_status("Error occurred. Halp.")
             print(f"An error occurred: {e}")
+            traceback.print_exc()
             break
 
 if __name__ == "__main__":
