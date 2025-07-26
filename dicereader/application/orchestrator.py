@@ -49,7 +49,8 @@ def save_blob_images_with_overlay(results, loop_count):
     for idx, (label, die_type, image) in enumerate(results):
         overlay_img = image.copy()
         text = f"{label} ({die_type})"
-        cv2.putText(overlay_img, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+        # Smaller font size and thinner line
+        cv2.putText(overlay_img, text, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA)
 
         # Resize keeping aspect ratio, then pad to 100x100 with black border
         h, w = overlay_img.shape[:2]
