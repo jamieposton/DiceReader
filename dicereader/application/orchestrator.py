@@ -110,6 +110,21 @@ def record_dice(results, histogram_path="histogram.png"):
         plt.savefig(histogram_path)
         plt.close()
 
+
+def save_blobs_for_labeling(dice_images):
+    """
+    Save each blob image into ./data/unlabeled_data/blobs/ for later labeling.
+    """
+
+    save_dir = os.path.join("data", "unlabeled_data", "blobs")
+    os.makedirs(save_dir, exist_ok=True)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+    for idx, img in enumerate(dice_images):
+        filename = f"blob_{timestamp}_{idx+1}.png"
+        path = os.path.join(save_dir, filename)
+        cv2.imwrite(path, img)
+
+
 def split_frames(frame):
     """
     Split the frame into individual dice images using contour detection.
@@ -180,8 +195,10 @@ def main():
             log_status("Recording dice results and updating histogram...")
             print("Splitting frame into dice blobs...")
             dice_images = split_frames(frame)
+            # Save blobs for labeling
             results = []
             if dice_images:
+                save_blobs_for_labeling(dice_images)
                 print(f"Found {len(dice_images)} dice blobs.")
                 for idx, dice_img in enumerate(dice_images):
                     print(f"Detecting dice for blob {idx+1}...")
