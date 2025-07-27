@@ -1,6 +1,6 @@
 from dicereader.domain.dumper import Dumper
 from dicereader.domain.camera import Camera
-from dicereader.domain.model import OCRModel
+from dicereader.domain.model import EfficientNetDieResultModel
 
 import numpy as np
 import os
@@ -15,7 +15,7 @@ import traceback
 
 # We'll instantiate the model globally so it's loaded only once
 model = None
-ocr_model = None
+efficient_net_models = None
 
 # Global histogram counter
 dice_histogram = Counter()
@@ -78,10 +78,29 @@ def detect_dice(frame):
     Detect dice in the given frame using the Model class.
     For now, assumes the whole frame is a single die.
     """
-    global ocr_model
-    if ocr_model is None:
-        ocr_model = OCRModel()
-    results = ocr_model.predict(frame)
+    global efficient_net_models
+    if efficient_net_models is None:
+        die_types = ["D4", "D6", "D8", "D10", "P", "D12", "D20"]
+        die_result_model_paths = {}
+        die_result_models_dir = os.path.join(os.getcwd(), 'checkpoints', 'die_result_models')
+        for die_type in die_types:
+            pattern = f'effnet_{die_type}_result_'
+            candidates = [f for f in os.listdir(die_result_models_dir) if f.startswith(pattern) and f.endswith('.pt')]
+            if not candidates:
+                print(f"Warning: No model file found for die type {die_type} in {die_result_models_dir}")
+                continue
+            # Sort by timestamp in filename (assumes format: effnet_{die_type}_result_YYYYMMDD_HHMMSS.pt)
+            candidates.sort(reverse=True)
+            latest_model = candidates[0]
+            die_result_model_paths[die_type] = os.path.join(die_result_models_dir, latest_model)
+        if not die_result_model_paths:
+            print("Error: No die result model files found. Cannot proceed.")
+            return []
+        efficient_net_models = EfficientNetDieResultModel(
+            die_type_model_path=os.path.join(os.getcwd(), 'checkpoints', 'die_type_models', 'efficientnet_dice_classifier_20250726_204313.pt'),
+            die_result_model_paths=die_result_model_paths
+        )
+    results = efficient_net_models.predict(frame)
     return results
 
 def record_dice(results, histogram_path="histogram.png"):
@@ -95,15 +114,16 @@ def record_dice(results, histogram_path="histogram.png"):
     # Each result: (label, die_type, image)
     for result in results:
         dice_roll, die_type, _ = result
+        # Skip recording if die_type is 'unknown'
+        if die_type == "unknown":
+            continue
         if dice_roll is not None:
             dice_histogram[(str(dice_roll), die_type)] += 1
-        else:
-            dice_histogram[("unknown", "unknown")] += 1
 
     # Define colors for die types
     die_type_colors = {
         "D4": "#e6194b", "D6": "#3cb44b", "D8": "#ffe119", "D10": "#4363d8",
-        "P": "#f58231", "D12": "#911eb4", "D20": "#46f0f0", "unknown": "#a9a9a9"
+        "P": "#f58231", "D12": "#911eb4", "D20": "#46f0f0"
     }
 
     # Build stacked bar chart data
@@ -117,8 +137,6 @@ def record_dice(results, histogram_path="histogram.png"):
     def result_sort_key(val):
         try:
             # Percentile die: '00', '10', ..., '90'
-            if val == "unknown":
-                return (2, val)
             if len(val) == 2 and val.isdigit() and val.startswith("0"):
                 return (0, int(val))
             return (1, int(val))
