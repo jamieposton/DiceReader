@@ -40,17 +40,23 @@ class ImageLabeler:
 
     def label_folder(self, input_folder: str, output_root: str):
         os.makedirs(output_root, exist_ok=True)
-        for img_file in sorted(os.listdir(input_folder)):
-            img_path = os.path.join(input_folder, img_file)
-            label = self.label_image(img_path)
-            if label is None:
-                print("Quitting...")
-                break
-            label_dir = os.path.join(output_root, label)
-            os.makedirs(label_dir, exist_ok=True)
-            shutil.copy(img_path, label_dir)
-            os.remove(img_path)
-            print(f"Labeled {img_file} as {label} and deleted from input folder")
+        # Iterate over each die type subfolder
+        for die_type in sorted(os.listdir(input_folder)):
+            die_type_dir = os.path.join(input_folder, die_type)
+            if not os.path.isdir(die_type_dir):
+                continue
+            print(f"Labeling die type folder: {die_type}")
+            for img_file in sorted(os.listdir(die_type_dir)):
+                img_path = os.path.join(die_type_dir, img_file)
+                label = self.label_image(img_path)
+                if label is None:
+                    print("Quitting...")
+                    return
+                label_dir = os.path.join(output_root, label)
+                os.makedirs(label_dir, exist_ok=True)
+                shutil.copy(img_path, label_dir)
+                os.remove(img_path)
+                print(f"Labeled {img_file} as {label} and deleted from input folder")
 
 # Example usage for die type labeling:
 if __name__ == "__main__":
