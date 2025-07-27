@@ -47,6 +47,8 @@ def save_blob_images_with_overlay(results, loop_count):
         cv2.imwrite(path, dummy_img)
         return
     for idx, (label, die_type, image) in enumerate(results):
+        if die_type == "unknown":
+            continue
         overlay_img = image.copy()
         text = f"{label} ({die_type})"
         # Smaller font size and thinner line
