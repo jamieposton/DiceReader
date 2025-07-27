@@ -24,7 +24,7 @@ class AllRunsImageFolder(datasets.ImageFolder):
 CHECKPOINTS_DIR = os.path.join(BASENAME, 'checkpoints')
 os.makedirs(CHECKPOINTS_DIR, exist_ok=True)
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-MODEL_SAVE_PATH = os.path.join(CHECKPOINTS_DIR, f'efficientnet_dice_classifier_{timestamp}.pt')
+MODEL_SAVE_PATH = os.path.join(CHECKPOINTS_DIR, 'die_type_models', f'efficientnet_dice_classifier_{timestamp}.pt')
 BATCH_SIZE = 32
 NUM_EPOCHS = 10
 NUM_CLASSES = 8
