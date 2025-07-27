@@ -158,7 +158,7 @@ class OCRModel:
                 results.append(("unknown", die_type, image))
         return results
 
-def split_frames(self, frame):
+def split_frames(frame):
     """
     Split the frame into individual dice images using contour detection.
     Returns a list of cropped dice images.
